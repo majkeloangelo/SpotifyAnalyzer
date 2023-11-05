@@ -1,74 +1,54 @@
-import sys
 import json
+import sys
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, QFileDialog, QMessageBox
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import *
 
-class App(QMainWindow):
+class Window(QWidget):
     def __init__(self):
         super().__init__()
 
-        #initialize parametrs of window app
-        self.title = 'My Spotify Analyze'
-        self.left = 0
-        self.top = 0
-        self.width = 800
-        self.height = 600
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
+        #set basic config
+        self.setWindowTitle('Spotify Analyzer')
+        self.setGeometry(0, 0, 600, 400)
 
-        #
-        self.table_widget = MyTableWidget(self)
-        self.setCentralWidget(self.table_widget)
+        layout = QGridLayout()
 
-        #show window app
-        self.show()
-#initialize tabs in window app
-class MyTableWidget(QWidget):
-    def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
-        #set layout
-        self.layout = QVBoxLayout(self)
+        #set widgets
+        #logo
+        label = QLabel()
+        image = QPixmap("image.png")
+        image = image.scaledToWidth(200)
+        label.setPixmap(image)
 
-        #initialize tab screen
-        self.tabs = QTabWidget()
-        self.tab1 = QWidget()
-        self.tab2 = QWidget()
-        self.tab3 = QWidget()
-        self.tabs.resize(300, 200)
+        #load file
+        load_button = QPushButton('przegladaj z dysku')
+        load_button.clicked.connect(self.load_file)
 
-        #add tabs
-        self.tabs.addTab(self.tab1, "Load File")
-        self.tabs.addTab(self.tab2, "Your data in table")
-        self.tabs.addTab(self.tab3, "Pandas")
+        #set widgets to the grid
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(QLabel('My Spotify Data Analyze'), 0 ,1)
+        layout.addWidget(QLabel('Wczytaj dane:'), 1, 0)
+        layout.addWidget((load_button), 1, 1)
 
-        #create first tab
-        self.tab1.layout = QVBoxLayout(self)
-        self.pushButton1 = QPushButton("Load file", self)
-        self.pushButton1.clicked.connect(self.load_file)
-        self.tab1.layout.addWidget(self.pushButton1)
-        self.tab1.setLayout(self.tab1.layout)
-
-        #add tabs to widget
-        self.layout.addWidget(self.tabs)
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     #load file
     def load_file(self):
         options = QFileDialog.Options()
         options = QFileDialog.DontUseNativeDialog
-        file_name, ok = QFileDialog.getOpenFileName(self, "Choose file", "", "*.json", options=options)
+        file_name, ok = QFileDialog.getOpenFileName(self, "Wybierz plik", "", "*.json", options=options)
         print(file_name)
 
         #show meesage box after uploading file
         if file_name != "":
-            self.message_success() #we're home, baby!
+            self.message_success()  #we're home, baby!
             #open JSON file
             #considering using ijson for loading big JSON files, like 10000 elements each...
             #also using database...
             #guess what, both will be best idea
             with open(file_name, 'r') as json_file:
                 json_data = json.load(json_file)
-                print(json_data)
                 #iterate every object in JSON
                 for data in json_data:
                     end_time = data['endTime']
@@ -81,7 +61,7 @@ class MyTableWidget(QWidget):
                     print(track_name)
                     print(ms_played)
         else:
-            self.message_cancel() #feels bad man
+            self.message_cancel()  #feels bad man
 
     #message box with information about status of uploading file
     def message_success(self):
@@ -92,6 +72,7 @@ class MyTableWidget(QWidget):
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
+
     def message_cancel(self):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -101,7 +82,8 @@ class MyTableWidget(QWidget):
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ex = App()
+    window = Window()
+    window.show()
     sys.exit(app.exec_())
