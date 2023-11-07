@@ -1,5 +1,6 @@
 import json
 import sys
+import psycopg2
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
@@ -49,17 +50,19 @@ class Window(QWidget):
             #guess what, both will be best idea
             with open(file_name, 'r') as json_file:
                 json_data = json.load(json_file)
+                i = 1
                 #iterate every object in JSON
                 for data in json_data:
                     end_time = data['endTime']
                     artist_name = data['artistName']
                     track_name = data['trackName']
                     ms_played = data['msPlayed']
-
-                    print(end_time)
-                    print(artist_name)
-                    print(track_name)
-                    print(ms_played)
+                    self.connection(i, end_time, artist_name, track_name, ms_played)
+                    #print(end_time)
+                    #print(artist_name)
+                    #print(track_name)
+                    #print(ms_played)
+                    i+=1
         else:
             self.message_cancel()  #feels bad man
 
@@ -81,6 +84,24 @@ class Window(QWidget):
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
+
+    def connection(self, id_number, end_time, artist_name, track_name, ms_played):
+        conn = psycopg2.connect(
+            host="localhost",
+            database="spoify_data",
+            user="postgres",
+            password="qwerty123")
+
+        cur = conn.cursor()
+
+        query = "INSERT INTO data VALUES (%s, %s, %s, %s, %s)"
+        values = (id_number, '{}'.format(end_time), '{}'.format(artist_name), '{}'.format(track_name), ms_played)
+
+        cur.execute(query, values)
+
+        conn.commit()
+        cur.close()
+        conn.close()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
