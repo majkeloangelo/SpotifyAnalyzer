@@ -66,7 +66,7 @@ class Window(QWidget):
         else:
             self.message_cancel()  #feels bad man
 
-    #message box with information about status of uploading file
+    #message box with information about status of uploading file - success
     def message_success(self):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -75,7 +75,7 @@ class Window(QWidget):
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
-
+    #message box with information about status of uploading file - no file chosen
     def message_cancel(self):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -84,24 +84,35 @@ class Window(QWidget):
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
+    # message box with information about db connection
+    def message_db(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
 
+        msg.setText("Database connection not found")
+        msg.setWindowTitle("Information")
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.exec()
     def connection(self, id_number, end_time, artist_name, track_name, ms_played):
-        conn = psycopg2.connect(
-            host="localhost",
-            database="spoify_data",
-            user="postgres",
-            password="qwerty123")
+        try:
+            conn = psycopg2.connect(
+                host="localhost",
+                database="spoify_data",
+                user="postgres",
+                password="qwerty123")
+            cur = conn.cursor()
 
-        cur = conn.cursor()
+            query = "INSERT INTO data VALUES (%s, %s, %s, %s, %s)"
+            values = (id_number, '{}'.format(end_time), '{}'.format(artist_name), '{}'.format(track_name), ms_played)
 
-        query = "INSERT INTO data VALUES (%s, %s, %s, %s, %s)"
-        values = (id_number, '{}'.format(end_time), '{}'.format(artist_name), '{}'.format(track_name), ms_played)
+            cur.execute(query, values)
 
-        cur.execute(query, values)
+            conn.commit()
+            cur.close()
+            conn.close()
 
-        conn.commit()
-        cur.close()
-        conn.close()
+        except (Exception, psycopg2.DatabaseError):
+            self.message_db()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
