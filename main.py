@@ -39,61 +39,39 @@ class Window(QWidget):
         options = QFileDialog.Options()
         options = QFileDialog.DontUseNativeDialog
         file_name, ok = QFileDialog.getOpenFileName(self, "Wybierz plik", "", "*.json", options=options)
-        print(file_name)
 
         #show meesage box after uploading file
         if file_name != "":
-            self.message_success()  #we're home, baby!
+            self.message_box("File uploaded successfully!")  #we're home, baby!
             #open JSON file
             #considering using ijson for loading big JSON files, like 10000 elements each...
-            #also using database...
-            #guess what, both will be best idea
             with open(file_name, 'r') as json_file:
                 json_data = json.load(json_file)
-                i = 1
                 #iterate every object in JSON
+                i = 1
                 for data in json_data:
                     end_time = data['endTime']
                     artist_name = data['artistName']
                     track_name = data['trackName']
                     ms_played = data['msPlayed']
-                    self.connection(i, end_time, artist_name, track_name, ms_played)
-                    #print(end_time)
-                    #print(artist_name)
-                    #print(track_name)
-                    #print(ms_played)
+                    self.connection(end_time, artist_name, track_name, ms_played)
                     i+=1
+                    print(i)
+                self.message_box("Data loaded to the database.")
         else:
-            self.message_cancel()  #feels bad man
+            self.message_box("No file chosen!")  #feels bad man
 
-    #message box with information about status of uploading file - success
-    def message_success(self):
+    #message box
+    def message_box(self, message):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
 
-        msg.setText("File uploaded successfully!")
+        msg.setText("{}".format(message))
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
-    #message box with information about status of uploading file - no file chosen
-    def message_cancel(self):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
 
-        msg.setText("No file chosen!")
-        msg.setWindowTitle("Information")
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
-    # message box with information about db connection
-    def message_db(self):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-
-        msg.setText("Database connection not found")
-        msg.setWindowTitle("Information")
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
-    def connection(self, id_number, end_time, artist_name, track_name, ms_played):
+    def connection(self, end_time, artist_name, track_name, ms_played):
         try:
             conn = psycopg2.connect(
                 host="localhost",
@@ -102,8 +80,8 @@ class Window(QWidget):
                 password="qwerty123")
             cur = conn.cursor()
 
-            query = "INSERT INTO data VALUES (%s, %s, %s, %s, %s)"
-            values = (id_number, '{}'.format(end_time), '{}'.format(artist_name), '{}'.format(track_name), ms_played)
+            query = "INSERT INTO data VALUES (DEFAULT, %s, %s, %s, %s)"
+            values = (end_time, artist_name, track_name, ms_played)
 
             cur.execute(query, values)
 
@@ -112,7 +90,7 @@ class Window(QWidget):
             conn.close()
 
         except (Exception, psycopg2.DatabaseError):
-            self.message_db()
+            self.message_box("Database connection not found.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
