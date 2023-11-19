@@ -18,27 +18,42 @@ class Window(QWidget):
         #set widgets
         #logo
         label = QLabel()
-        image = QPixmap("image.png")
+        image = QPixmap("logo.png")
         image = image.scaledToWidth(200)
         label.setPixmap(image)
 
         #load file
-        load_button = QPushButton('przegladaj z dysku')
+        load_button = QPushButton('search from computer')
         load_button.clicked.connect(self.load_file)
+
+        #set table
+        #data = {'id':[],
+                #'Artist name':[1],
+                #'Track name':[1],
+                #'Time played':[1]}
+
+        self.table = QTableWidget(self)
+        self.table.setColumnCount(4)
+        self.table.setColumnWidth(0, 50)
+        self.table.setColumnWidth(1, 150)
+        self.table.setColumnWidth(2, 150)
+        self.table.setColumnWidth(3, 150)
 
         #set widgets to the grid
         layout.addWidget(label, 0, 0)
         layout.addWidget(QLabel('My Spotify Data Analyze'), 0 ,1)
-        layout.addWidget(QLabel('Wczytaj dane:'), 1, 0)
+        layout.addWidget(QLabel('Load data:'), 1, 0)
         layout.addWidget((load_button), 1, 1)
+        layout.addWidget(QLabel('Your data:'), 2, 0)
+        layout.addWidget(self.table, 3, 0)
 
         self.setLayout(layout)
 
-    #load file
+    #load file - next function wich will part json into chunks
     def load_file(self):
         options = QFileDialog.Options()
         options = QFileDialog.DontUseNativeDialog
-        file_name, ok = QFileDialog.getOpenFileName(self, "Wybierz plik", "", "*.json", options=options)
+        file_name, ok = QFileDialog.getOpenFileName(self, "Select file", "", "*.json", options=options)
 
         #show meesage box after uploading file
         if file_name != "":
@@ -48,14 +63,14 @@ class Window(QWidget):
             with open(file_name, 'r') as json_file:
                 json_data = json.load(json_file)
                 #iterate every object in JSON
-                i = 1
+                i = 0
                 for data in json_data:
                     end_time = data['endTime']
                     artist_name = data['artistName']
                     track_name = data['trackName']
                     ms_played = data['msPlayed']
                     self.connection(end_time, artist_name, track_name, ms_played)
-                    i+=1
+                    i += 1
                     print(i)
                 self.message_box("Data loaded to the database.")
         else:
@@ -90,7 +105,7 @@ class Window(QWidget):
             conn.close()
 
         except (Exception, psycopg2.DatabaseError):
-            self.message_box("Database connection not found.")
+            self.message_box("Database connection error.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
