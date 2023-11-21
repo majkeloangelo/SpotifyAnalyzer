@@ -1,5 +1,7 @@
 import json
 import sys
+from datetime import datetime
+
 import psycopg2
 
 from PyQt5.QtGui import QPixmap, QStandardItemModel
@@ -38,22 +40,23 @@ class Window(QWidget):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        #self.table.setItem(0, 0, QTableWidgetItem(self.get_data(0)))
-        #self.table.setItem(1, 0, QTableWidgetItem(self.get_data(1)))
-        #self.table.setItem(2, 0, QTableWidgetItem(self.get_data(2)))
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         for i in range (5):
             loaded = self.get_data(i)
             for j in loaded:
                 for t in range(3):
-                    self.table.setItem(i, t, QTableWidgetItem(j[t]))
+                    if(t<2):
+                        self.table.setItem(i, t, QTableWidgetItem(j[t]))
+                    else:
+                        y = j[t]/1000
+                        x = '%d:%02d:%02d' % (y / 3600, y / 60 % 60, y % 60)
+                        self.table.setItem(i, t, QTableWidgetItem(x))
 
 
 
         #set widgets to the grid
         layout.addWidget(label, 0, 0)
-        layout.addWidget(QLabel('My Spotify Data Analyze'), 0 ,1)
         layout.addWidget(QLabel('Load data:'), 1, 0)
         layout.addWidget((load_button), 1, 1)
         layout.addWidget(QLabel('Your top 5 favorite songs listened on Spotify:'), 2, 0)
