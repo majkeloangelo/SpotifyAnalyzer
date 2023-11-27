@@ -1,10 +1,9 @@
 import json
 import sys
-from datetime import datetime
 
 import psycopg2
 
-from PyQt5.QtGui import QPixmap, QStandardItemModel
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
 
 class Window(QWidget):
@@ -13,7 +12,7 @@ class Window(QWidget):
 
         #set basic config
         self.setWindowTitle('Spotify Analyzer')
-        self.setGeometry(0, 0, 800, 600)
+        self.setGeometry(0, 0, 1000, 600)
 
         layout = QGridLayout()
 
@@ -25,7 +24,7 @@ class Window(QWidget):
         label.setPixmap(image)
 
         #load file
-        load_button = QPushButton('Search from computer')
+        load_button = QPushButton('Search...')
         load_button.clicked.connect(self.load_file)
 
         #set table
@@ -42,6 +41,41 @@ class Window(QWidget):
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
+        #set widgets to the grid
+
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(QLabel('Load data:'), 1, 0)
+        layout.addWidget((load_button), 1, 1)
+        layout.addWidget(QLabel(self.set_date()), 2, 0)
+        layout.addWidget(self.table, 3, 0)
+
+        self.load_data_into_table()
+        self.setLayout(layout)
+
+    def refresh_date(self):
+        self.layout().itemAtPosition(2, 0).widget().setText(self.set_date())
+    def set_date(self):
+        date_from = ('SELECT end_time FROM data ORDER BY id FETCH FIRST 1 ROWS ONLY;')
+        date_to = ('SELECT end_time FROM data ORDER BY id DESC FETCH FIRST 1 ROWS ONLY;')
+
+        date_f = get_date(self, date_from)
+        date_t = get_date(self, date_to)
+        date_list =[]
+
+        if(date_f != None):
+            date_from_str = ''.join(date_f)
+            date_list.append(date_from_str)
+
+            date_to_str = ''.join(date_t)
+            date_list.append(date_to_str)
+
+            message = 'Your top 5 favorite songs listened on Spotify from {} to {}:'.format(date_list[0], date_list[1])
+            return message
+        else:
+            message = 'Your top 5 favorite songs listened on Spotify'
+            return message
+
+    def load_data_into_table(self):
         for i in range (5):
             loaded = self.get_data(i)
             for j in loaded:
@@ -53,28 +87,13 @@ class Window(QWidget):
                         x = '%d:%02d:%02d' % (y / 3600, y / 60 % 60, y % 60)
                         self.table.setItem(i, t, QTableWidgetItem(x))
 
-
-
-        #set widgets to the grid
-        layout.addWidget(label, 0, 0)
-        layout.addWidget(QLabel('Load data:'), 1, 0)
-        layout.addWidget((load_button), 1, 1)
-        layout.addWidget(QLabel('Your top 5 favorite songs listened on Spotify:'), 2, 0)
-        layout.addWidget(self.table, 3, 0)
-
-        self.setLayout(layout)
-
-
-
-
-    #load file - next function wich will part json into chunks
+    #load file to database
     def load_file(self):
         options = QFileDialog.DontUseNativeDialog
         file_name, ok = QFileDialog.getOpenFileName(self, "Select file", "", "*.json", options=options)
 
         #show meesage box after uploading file
         if file_name != "":
-            self.message_box("File uploaded successfully!")  #we're home, baby!
             #open JSON file
             #considering using ijson for loading big JSON files, like 10000 elements each...
             with open(file_name, 'r') as json_file:
@@ -90,6 +109,8 @@ class Window(QWidget):
                     i += 1
                     print(i)
                 self.message_box("Data loaded to the database.")
+                self.load_data_into_table()
+                self.refresh_date()
         else:
             self.message_box("No file chosen!")  #feels bad man
 
@@ -107,7 +128,7 @@ class Window(QWidget):
         try:
             conn = psycopg2.connect(
                 host="localhost",
-                database="spoify_data",
+                database="spotify_data",
                 user="postgres",
                 password="qwerty123")
             cur = conn.cursor()
@@ -120,31 +141,46 @@ class Window(QWidget):
             conn.commit()
             cur.close()
             conn.close()
-
         except (Exception, psycopg2.DatabaseError):
             self.message_box("Database connection error.")
+
     def get_data(self, index):
-        try:
-            conn = psycopg2.connect(
-                host="localhost",
-                database="spoify_data",
-                user="postgres",
-                password="qwerty123")
-            cur = conn.cursor()
+        conn = psycopg2.connect(
+            host="localhost",
+            database="spotify_data",
+            user="postgres",
+            password="qwerty123")
+        cur = conn.cursor()
 
-            query = ("SELECT artist_name, track_name, SUM(ms_played) as czas_sluchania FROM data GROUP BY track_name, artist_name ORDER BY czas_sluchania DESC LIMIT 1 OFFSET {};".format(index))
+        query = ("SELECT artist_name, track_name, SUM(ms_played) as czas_sluchania FROM data GROUP BY track_name, artist_name ORDER BY czas_sluchania DESC LIMIT 1 OFFSET {};".format(index))
 
-            cur.execute(query)
-            data = cur.fetchall()
+        cur.execute(query)
+        data = cur.fetchall()
 
-            conn.commit()
-            cur.close()
-            conn.close()
+        conn.commit()
+        cur.close()
+        conn.close()
 
-            return data
+        return data
+def get_date(self, variable):
+    conn = psycopg2.connect(
+        host="localhost",
+        database="spotify_data",
+        user="postgres",
+        password="qwerty123")
+    cur = conn.cursor()
 
-        except (Exception, psycopg2.DatabaseError):
-            self.message_box("Database connection error.")
+    query = (variable)
+
+    cur.execute(query)
+    data = cur.fetchone()
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return data
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
