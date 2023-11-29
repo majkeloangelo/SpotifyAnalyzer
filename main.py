@@ -24,8 +24,10 @@ class Window(QWidget):
         label.setPixmap(image)
 
         #load file
-        load_button = QPushButton('Search...')
+        load_button = QPushButton('Load data...')
         load_button.clicked.connect(self.load_file)
+        reset_button = QPushButton('Delete data')
+        reset_button.clicked.connect(self.reset_table)
 
         #set table
         self.table = QTableWidget(self)
@@ -36,18 +38,18 @@ class Window(QWidget):
         self.table.setColumnWidth(2, 150)
         self.table.setRowCount(5)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         #set widgets to the grid
 
         layout.addWidget(label, 0, 0)
-        layout.addWidget(QLabel('Load data:'), 1, 0)
-        layout.addWidget((load_button), 1, 1)
-        layout.addWidget(QLabel(self.set_date()), 2, 0)
-        layout.addWidget(self.table, 3, 0)
+        layout.addWidget((load_button), 1, 0)
+        layout.addWidget((reset_button), 1, 1)
+        layout.addWidget(QLabel(self.set_date()), 2, 0, 1, 2)
+        layout.addWidget(self.table,3, 0, 1, 2)
 
         self.load_data_into_table()
         self.setLayout(layout)
@@ -162,6 +164,26 @@ class Window(QWidget):
         conn.close()
 
         return data
+    def reset_table(self):
+        conn = psycopg2.connect(
+            host="localhost",
+            database="spotify_data",
+            user="postgres",
+            password="qwerty123")
+        cur = conn.cursor()
+
+        query = ("DROP TABLE data;")
+        cur.execute(query)
+
+        query2 = ("CREATE TABLE data (id SERIAL, end_time VARCHAR (150), artist_name VARCHAR (150), track_name VARCHAR(150), MS_PLAYED int);")
+        cur.execute(query2)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        self.refresh_date()
+        self.table.clearContents()
+
 def get_date(self, variable):
     conn = psycopg2.connect(
         host="localhost",
