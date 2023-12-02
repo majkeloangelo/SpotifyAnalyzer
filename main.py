@@ -1,5 +1,6 @@
-import json
 import sys
+
+import pandas as pd
 
 import psycopg2
 
@@ -71,7 +72,7 @@ class Window(QWidget):
             date_to_str = ''.join(date_t)
             date_list.append(date_to_str)
 
-            message = 'Your top 5 favorite songs listened on Spotify from {} to {}:'.format(date_list[0], date_list[1])
+            message = 'Your top 5 favorite songs listened on Spotify from {} to {}'.format(date_list[0], date_list[1])
             return message
         else:
             message = 'Your top 5 favorite songs listened on Spotify'
@@ -98,18 +99,20 @@ class Window(QWidget):
         if file_name != "":
             #open JSON file
             #considering using ijson for loading big JSON files, like 10000 elements each...
-            with open(file_name, 'r') as json_file:
-                json_data = json.load(json_file)
+                json_data = pd.read_json(file_name)
                 #iterate every object in JSON
-                i = 0
-                for data in json_data:
-                    end_time = data['endTime']
-                    artist_name = data['artistName']
-                    track_name = data['trackName']
-                    ms_played = data['msPlayed']
-                    self.connection(end_time, artist_name, track_name, ms_played)
-                    i += 1
-                    print(i)
+                length = len(json_data)
+                print(length)
+                j = 1
+                while(j<=length):
+                    for i, data in json_data.iterrows():
+                        end_time = data['endTime']
+                        artist_name = data['artistName']
+                        track_name = data['trackName']
+                        ms_played = data['msPlayed']
+                        self.connection(end_time, artist_name, track_name, ms_played)
+                        j += 1
+                        print(j)
                 self.message_box("Data loaded to the database.")
                 self.load_data_into_table()
                 self.refresh_date()
