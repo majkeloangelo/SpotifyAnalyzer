@@ -224,6 +224,7 @@ class Window(QWidget):
         conn.commit()
         cur.close()
         conn.close()
+
         self.refresh_date()
         self.top_Table.clearContents()
         self.month_Table.clearContents()
