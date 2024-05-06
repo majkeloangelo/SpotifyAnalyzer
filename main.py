@@ -1,9 +1,6 @@
 import sys
-
 import pandas as pd
-
 import psycopg2
-
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
 
@@ -13,7 +10,7 @@ class Window(QWidget):
 
         #set basic config
         self.setWindowTitle('Spotify Analyzer')
-        self.setGeometry(0, 0, 1000, 600)
+        self.setGeometry(0, 0, 1250, 600)
 
         layout = QGridLayout()
 
@@ -30,19 +27,26 @@ class Window(QWidget):
         reset_button = QPushButton('Delete data')
         reset_button.clicked.connect(self.reset_table)
 
-        #set table
-        self.table = QTableWidget(self)
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Artist name", "Track name", "Time played"])
-        self.table.setColumnWidth(0, 150)
-        self.table.setColumnWidth(1, 150)
-        self.table.setColumnWidth(2, 150)
-        self.table.setRowCount(5)
-        header = self.table.horizontalHeader()
+        #set top 5 table
+        self.top_Table = QTableWidget(self)
+        self.top_Table.setColumnCount(3)
+        self.top_Table.setHorizontalHeaderLabels(["Artist name", "Track name", "Time played"])
+        self.top_Table.setColumnWidth(0, 150)
+        self.top_Table.setColumnWidth(1, 150)
+        self.top_Table.setColumnWidth(2, 150)
+        self.top_Table.setRowCount(5)
+        header = self.top_Table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.top_Table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        #set month sum table
+        self.month_Table = QTableWidget(self)
+        self.month_Table.setColumnCount(12)
+        self.month_Table.setHorizontalHeaderLabels(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])
+        self.month_Table.setRowCount(1)
+        self.month_Table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         #set widgets to the grid
 
@@ -50,9 +54,12 @@ class Window(QWidget):
         layout.addWidget((load_button), 1, 0)
         layout.addWidget((reset_button), 1, 1)
         layout.addWidget(QLabel(self.set_date()), 2, 0, 1, 2)
-        layout.addWidget(self.table,3, 0, 1, 2)
+        layout.addWidget(self.top_Table, 3, 0, 1, 2)
+        layout.addWidget(QLabel("How much time did you spend listening to music by month?"), 4, 0, 1, 2)
+        layout.addWidget(self.month_Table, 5, 0, 1, 2)
 
-        self.load_data_into_table()
+        self.load_data_into_top_Table()
+        self.load_data_into_month_Table()
         self.setLayout(layout)
 
     def refresh_date(self):
@@ -78,17 +85,23 @@ class Window(QWidget):
             message = 'Your top 5 favorite songs listened on Spotify'
             return message
 
-    def load_data_into_table(self):
+    def load_data_into_top_Table(self):
         for i in range (5):
             loaded = self.get_data(i)
             for j in loaded:
                 for t in range(3):
                     if(t<2):
-                        self.table.setItem(i, t, QTableWidgetItem(j[t]))
+                        self.top_Table.setItem(i, t, QTableWidgetItem(j[t]))
                     else:
                         y = j[t]/1000
                         x = '%d:%02d:%02d' % (y / 3600, y / 60 % 60, y % 60)
-                        self.table.setItem(i, t, QTableWidgetItem(x))
+                        self.top_Table.setItem(i, t, QTableWidgetItem(x))
+    def load_data_into_month_Table(self):
+        for i in range (1,13):
+            loaded = self.get_millis(i)
+            y = loaded/1000
+            x = '%d:%02d:%02d' % (y / 3600, y / 60 % 60, y % 60)
+            self.month_Table.setItem(0, i-1, QTableWidgetItem(x))
 
     #load file to database
     def load_file(self):
@@ -114,10 +127,37 @@ class Window(QWidget):
                         j += 1
                         print(j)
                 self.message_box("Data loaded to the database.")
-                self.load_data_into_table()
+                self.load_data_into_top_Table()
+                self.load_data_into_month_Table()
                 self.refresh_date()
         else:
             self.message_box("No file chosen!")  #feels bad man
+    def get_millis(self,index):
+        conn = psycopg2.connect(
+            host="localhost",
+            database="spotify_data",
+            user="postgres",
+            password="qwerty123")
+        cur = conn.cursor()
+
+        if (index < 10):
+            query = ("SELECT SUM(ms_played) FROM data WHERE end_time like '_____0{}%';".format(index))
+        else:
+            query = ("SELECT SUM(ms_played) FROM data WHERE end_time like '_____{}%';".format(index))
+
+        cur.execute(query)
+        data = cur.fetchone()
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if (data[0] is None):
+            return 0
+        else:
+            return data[0]
+
+        return data[0]
 
     #message box
     def message_box(self, message):
@@ -185,7 +225,8 @@ class Window(QWidget):
         cur.close()
         conn.close()
         self.refresh_date()
-        self.table.clearContents()
+        self.top_Table.clearContents()
+        self.month_Table.clearContents()
 
 def get_date(self, variable):
     conn = psycopg2.connect(
