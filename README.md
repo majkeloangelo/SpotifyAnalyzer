@@ -12,7 +12,7 @@ Setup
 
   	    docker build -t postgres -f dockerfile.dockerfile .
 
-  	    docker run –name spotifyanalyzer -p 5432:5432 -d postgres
+  	    docker run --name spotifyanalyzer -p 5432:5432 -d postgres
 
 Run and test 
 1.	Run python script in IDE
