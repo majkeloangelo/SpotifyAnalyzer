@@ -10,7 +10,7 @@ Setup
 6.	Install all required dependencies like Pandas, PyQt5 and Psycopg2
 7.	Run CMD and enter directory from point 2 and build container with database:
 
-  	    docker built -t postgres -f dockerfile.dockerfile .
+  	    docker build -t postgres -f dockerfile.dockerfile .
 
   	    docker run –name spotifyanalyzer -p 5432:5432 -d postgres
 
